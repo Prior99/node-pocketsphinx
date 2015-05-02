@@ -13,107 +13,107 @@ Recognizer::~Recognizer() {
 
 Persistent<Function> Recognizer::constructor;
 
-void Recognizer::Init(Handle<Object> exports, Handle<Object> module) {
-  Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
-  tpl->SetClassName(String::NewSymbol("Recognizer"));
+void Recognizer::Init(Handle<Object> exports) {
+  Local<FunctionTemplate> tpl = NanNew<FunctionTemplate>(New);
+  tpl->SetClassName(NanNew("Recognizer"));
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   // Static Methods and Properties
-  tpl->Set(String::NewSymbol("fromFloat"), FunctionTemplate::New(FromFloat)->GetFunction());
-  tpl->Set(String::NewSymbol("modelDirectory"), String::NewSymbol(MODELDIR));
+  tpl->Set(NanNew("fromFloat"), NanNew<FunctionTemplate>(FromFloat)->GetFunction());
+  tpl->Set(NanNew("modelDirectory"), NanNew(MODELDIR));
 
   // Prototype Methods and Properies
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("start"), FunctionTemplate::New(Start)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("stop"), FunctionTemplate::New(Stop)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("restart"), FunctionTemplate::New(Restart)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("start"), NanNew<FunctionTemplate>(Start)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("stop"), NanNew<FunctionTemplate>(Stop)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("restart"), NanNew<FunctionTemplate>(Restart)->GetFunction());
 
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("addKeyphraseSearch"), FunctionTemplate::New(AddKeyphraseSearch)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("addKeywordsSearch"), FunctionTemplate::New(AddKeywordsSearch)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("addGrammarSearch"), FunctionTemplate::New(AddGrammarSearch)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("addNgramSearch"), FunctionTemplate::New(AddNgramSearch)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("addKeyphraseSearch"), NanNew<FunctionTemplate>(AddKeyphraseSearch)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("addKeywordsSearch"), NanNew<FunctionTemplate>(AddKeywordsSearch)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("addGrammarSearch"), NanNew<FunctionTemplate>(AddGrammarSearch)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("addNgramSearch"), NanNew<FunctionTemplate>(AddNgramSearch)->GetFunction());
 
-  tpl->PrototypeTemplate()->SetAccessor(String::NewSymbol("search"), GetSearch, SetSearch);
+  tpl->PrototypeTemplate()->SetAccessor(NanNew("search"), GetSearch, SetSearch);
 
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("write"), FunctionTemplate::New(Write)->GetFunction());
-  tpl->PrototypeTemplate()->Set(String::NewSymbol("writeSync"), FunctionTemplate::New(WriteSync)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("write"), NanNew<FunctionTemplate>(Write)->GetFunction());
+  tpl->PrototypeTemplate()->Set(NanNew("writeSync"), NanNew<FunctionTemplate>(WriteSync)->GetFunction());
 
-  constructor = Persistent<Function>::New(tpl->GetFunction());
-  module->Set(String::NewSymbol("exports"), constructor);
+  //constructor = Persistent<Function>::New(tpl->GetFunction());
+  NanAssignPersistent(constructor, tpl->GetFunction());
+  exports->Set(NanNew("PocketSphinx"), tpl->GetFunction());
+  //module->Set(NanNew("exports"), constructor);
 }
 
-Handle<Value> Recognizer::New(const Arguments& args) {
-  HandleScope scope;
+NAN_METHOD(Recognizer::New) {
+  NanScope();
 
   if(!args.IsConstructCall()) {
     const int argc = 2;
     Local<Value> argv[argc] = { args[0], args[1] };
-    return scope.Close(constructor->NewInstance(argc, argv));
+    Local<Function> cons = NanNew<Function>(constructor);
+    NanReturnValue(cons->NewInstance(argc, argv));
   }
 
   if(args.Length() < 2) {
-    ThrowException(Exception::TypeError(String::New("Incorrect number of arguments, expected options and callback")));
-    return scope.Close(Undefined());
+    NanThrowTypeError("Incorrect number of arguments, expected options and callback");
+    NanReturnUndefined();
   }
 
   if(!args[0]->IsObject()) {
-    ThrowException(Exception::TypeError(String::New("Expected options to be an object")));
-    return scope.Close(Undefined());
+    NanThrowTypeError("Expected options to be an object");
+    NanReturnUndefined();
   }
 
   if(!args[1]->IsFunction()) {
-    ThrowException(Exception::TypeError(String::New("Expected callback to be a function")));
-    return scope.Close(Undefined());
+    NanThrowTypeError("Expected callback to be a function");
+    NanReturnUndefined();
   }
-  
+
   Recognizer* instance = new Recognizer();
 
   Handle<Object> options = args[0]->ToObject();
-  instance->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
-
-  String::AsciiValue hmmValue(Default(options->Get(String::NewSymbol("hmm")), String::NewSymbol(MODELDIR "/en-us/en-us")));
-  String::AsciiValue dictValue(Default(options->Get(String::NewSymbol("dict")), String::NewSymbol(MODELDIR "/en-us/cmudict-en-us.dict")));
-  String::AsciiValue samprateValue(Default(options->Get(String::NewSymbol("samprate")), String::NewSymbol("44100")));
-  String::AsciiValue nfftValue(Default(options->Get(String::NewSymbol("nfft")), String::NewSymbol("2048")));
+  //instance->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
+  NanAssignPersistent(instance->callback, NanNew<Function>(args[1]));
 
   cmd_ln_t* config = cmd_ln_init(NULL, ps_args(), TRUE,
-    "-hmm", *hmmValue,
-    "-dict", *dictValue,
-    "-samprate", *samprateValue,
-    "-nfft", *nfftValue,
+    "-hmm", options->Get(NanNew("hmm"))->IsUndefined() ? MODELDIR "/en-us/en-us" : *NanAsciiString(options->Get(NanNew("hmm"))),
+    "-dict", options->Get(NanNew("dict"))->IsUndefined() ?  MODELDIR "/en-us/cmudict-en-us.dict" : *NanAsciiString(options->Get(NanNew("dict"))),
+    "-samprate", options->Get(NanNew("samprate"))->IsUndefined() ?  "44100" : *NanAsciiString(options->Get(NanNew("samprate"))),
+    "-nfft", options->Get(NanNew("nfft"))->IsUndefined() ?  "2048" : *NanAsciiString(options->Get(NanNew("nfft"))),
     NULL);
 
   instance->ps = ps_init(config);
 
   instance->Wrap(args.This());
 
-  return args.This();
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::AddKeyphraseSearch(const Arguments& args) {
-  HandleScope scope;
+NAN_METHOD(Recognizer::AddKeyphraseSearch) {
+  NanScope();
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   if(args.Length() < 2) {
-    ThrowException(Exception::TypeError(String::NewSymbol("Incorrect number of arguments, expected name and keyphrase")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Incorrect number of arguments, expected name and keyphrase");
+    NanReturnValue(args.This());
   }
 
   if(!args[0]->IsString() || !args[1]->IsString()) {
-    ThrowException(Exception::TypeError(String::NewSymbol("Expected both name and keyphrase to be strings")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Expected both name and keyphrase to be strings");
+    NanReturnValue(args.This());
   }
 
-  String::AsciiValue name(args[0]);
-  String::AsciiValue keyphrase(args[1]);
+  NanAsciiString name(args[0]);
+  NanAsciiString keyphrase(args[1]);
 
   int result = ps_set_keyphrase(instance->ps, *name, *keyphrase);
   if(result < 0)
-    ThrowException(Exception::Error(String::NewSymbol("Failed to add keyphrase search to recognizer")));
+    NanThrowError("Failed to add keyphrase search to recognizer");
 
-  return scope.Close(args.This());
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::AddKeywordsSearch(const Arguments& args) {
+NAN_METHOD(Recognizer::AddKeywordsSearch) {
+  NanScope();
   HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
@@ -134,10 +134,11 @@ Handle<Value> Recognizer::AddKeywordsSearch(const Arguments& args) {
   if(result < 0)
     ThrowException(Exception::Error(String::New("Failed to add keywords search to recognizer")));
 
-  return scope.Close(args.This());
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::AddGrammarSearch(const Arguments& args) {
+NAN_METHOD(Recognizer::AddGrammarSearch) {
+  NanScope();
   HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
@@ -158,10 +159,11 @@ Handle<Value> Recognizer::AddGrammarSearch(const Arguments& args) {
   if(result < 0)
     ThrowException(Exception::Error(String::New("Failed to add grammar search to recognizer")));
 
-  return scope.Close(args.This());
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::AddNgramSearch(const Arguments& args) {
+NAN_METHOD(Recognizer::AddNgramSearch) {
+  NanScope();
   HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
@@ -182,10 +184,10 @@ Handle<Value> Recognizer::AddNgramSearch(const Arguments& args) {
   if(result < 0)
     ThrowException(Exception::Error(String::New("Failed to add Ngram search to recognizer")));
 
-  return scope.Close(args.This());
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::GetSearch(const Local<String> property, const AccessorInfo& info) {
+NAN_GETTER(Recognizer::GetSearch) {
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(info.This());
 
   Local<Value> search = String::NewSymbol(ps_get_search(instance->ps));
@@ -193,7 +195,7 @@ Handle<Value> Recognizer::GetSearch(const Local<String> property, const Accessor
   return search;
 }
 
-void Recognizer::SetSearch(Local<String> property, Local<Value> value, const AccessorInfo& info) {
+NAN_SETTER(Recognizer::SetSearch) {
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(info.This());
 
   String::AsciiValue search(value);
@@ -201,17 +203,19 @@ void Recognizer::SetSearch(Local<String> property, Local<Value> value, const Acc
   ps_set_search(instance->ps, *search);
 }
 
-Handle<Value> Recognizer::Start(const Arguments& args) {
+NAN_METHOD(Recognizer::Start) {
+  NanScope();
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   int result = ps_start_utt(instance->ps);
   if(result)
     ThrowException(Exception::Error(String::New("Failed to start PocketSphinx processing")));
 
-  return args.This();
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::Stop(const Arguments& args) {
+NAN_METHOD(Recognizer::Stop) {
+  NanScope();
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   int result = ps_end_utt(instance->ps);
@@ -221,21 +225,23 @@ Handle<Value> Recognizer::Stop(const Arguments& args) {
   return args.This();
 }
 
-Handle<Value> Recognizer::Restart(const Arguments& args) {
+NAN_METHOD(Recognizer::Restart) {
+  NanScope();
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   int result = ps_start_utt(instance->ps);
   if(result)
     ThrowException(Exception::Error(String::New("Failed to start PocketSphinx processing")));
-  
+
   result = ps_end_utt(instance->ps);
   if(result)
     ThrowException(Exception::Error(String::New("Failed to restart PocketSphinx processing")));
 
-  return args.This();
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::Write(const Arguments& args) {
+NAN_METHOD(Recognizer::Write) {
+  NanScope();
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   if(!args.Length()) {
@@ -259,10 +265,11 @@ Handle<Value> Recognizer::Write(const Arguments& args) {
 
   uv_queue_work(uv_default_loop(), req, AsyncWorker, (uv_after_work_cb)AsyncAfter);
 
-  return args.This();
+  NanReturnValue(args.This());
 }
 
-Handle<Value> Recognizer::WriteSync(const Arguments& args) {
+NAN_METHOD(Recognizer::WriteSync) {
+  NanScope();
   HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
@@ -292,7 +299,7 @@ Handle<Value> Recognizer::WriteSync(const Arguments& args) {
   Handle<Value> argv[3] = { Null(), hyp ? String::NewSymbol(hyp) : Null(), NumberObject::New(score)};
   instance->callback->Call(Context::GetCurrent()->Global(), 3, argv);
 
-  return scope.Close(args.This());
+  NanReturnValue(args.This());
 }
 
 void Recognizer::AsyncWorker(uv_work_t* request) {
@@ -303,7 +310,7 @@ void Recognizer::AsyncWorker(uv_work_t* request) {
     data->exception = Exception::Error(String::NewSymbol("Failed to process audio data"));
     return;
   }
-  
+
   int32 score;
   const char* hyp = ps_get_hyp(data->instance->ps, &score);
 
@@ -328,7 +335,8 @@ Local<Value> Recognizer::Default(Local<Value> value, Local<Value> fallback) {
   return value;
 }
 
-Handle<Value> Recognizer::FromFloat(const Arguments& args) {
+static NAN_METHOD(Recognizer::FromFloat) {
+  NanScope();
   HandleScope scope;
 
   if(!args.Length()) {
@@ -347,9 +355,9 @@ Handle<Value> Recognizer::FromFloat(const Arguments& args) {
   node::Buffer *slowBuffer = node::Buffer::New(length * sizeof(int16));
   int16* slowBufferData = reinterpret_cast<int16*>(node::Buffer::Data(slowBuffer));
 
-  return scope.Close(args[0]);
+  NanReturnValue(args[0]);
 
-  for(size_t i = 0; i < length; i++)
+  /*for(size_t i = 0; i < length; i++)
     slowBufferData[i] = data[i] * 32768;
 
   // Courtesy of http://sambro.is-super-awesome.com/2011/03/03/creating-a-proper-buffer-in-a-node-c-addon/
@@ -357,5 +365,5 @@ Handle<Value> Recognizer::FromFloat(const Arguments& args) {
   Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
   Handle<Value> constructorArgs[3] = { slowBuffer->handle_, Integer::New(length), Integer::New(0) };
   Local<Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
-  return scope.Close(actualBuffer);
+  NanReturnValue(actualBuffer);*/
 }

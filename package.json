@@ -22,5 +22,9 @@
   "devDependencies": {
     "express": "4.x",
     "socket.io": "1.x"
+  },
+  "dependencies": {
+    "bindings": "~1.2.1",
+    "nan": "~1.6.2"
   }
 }

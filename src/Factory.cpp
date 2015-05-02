@@ -4,8 +4,8 @@
 using namespace v8;
 
 extern "C" {
-	void InitAll(Handle<Object> exports, Handle<Object> module) {
-		Recognizer::Init(exports, module);
+	void InitAll(Handle<Object> exports) {
+		Recognizer::Init(exports);
 	}
 
 	NODE_MODULE(PocketSphinx, InitAll);

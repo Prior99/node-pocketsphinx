@@ -1,3 +1,3 @@
-var PocketSphinx = require('./build/Release/PocketSphinx.node');
+var PocketSphinx =  require('bindings')('PocketSphinx');
 
 module.exports = PocketSphinx;
