@@ -80,6 +80,7 @@ NAN_METHOD(Recognizer::New) {
     "-dict", options->Get(NanNew("dict"))->IsUndefined() ?  MODELDIR "/en-us/cmudict-en-us.dict" : *NanAsciiString(options->Get(NanNew("dict"))),
     "-samprate", options->Get(NanNew("samprate"))->IsUndefined() ?  "44100" : *NanAsciiString(options->Get(NanNew("samprate"))),
     "-nfft", options->Get(NanNew("nfft"))->IsUndefined() ?  "2048" : *NanAsciiString(options->Get(NanNew("nfft"))),
+    "-logfn", *NanAsciiString(options->Get(NanNew("logfn"))),
     NULL);
 
   instance->ps = ps_init(config);
