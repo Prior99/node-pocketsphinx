@@ -72,7 +72,8 @@ NAN_METHOD(Recognizer::New) {
 
   Handle<Object> options = args[0]->ToObject();
   //instance->callback = Persistent<Function>::New(Local<Function>::Cast(args[1]));
-  NanAssignPersistent(instance->callback, NanNew<Function>(args[1]));
+  instance->callback = new NanCallback(args[1].As<Function>());
+  //NanAssignPersistent(instance->callback, NanNew<Function>(args[1]));
 
   cmd_ln_t* config = cmd_ln_init(NULL, ps_args(), TRUE,
     "-hmm", options->Get(NanNew("hmm"))->IsUndefined() ? MODELDIR "/en-us/en-us" : *NanAsciiString(options->Get(NanNew("hmm"))),
@@ -114,91 +115,90 @@ NAN_METHOD(Recognizer::AddKeyphraseSearch) {
 
 NAN_METHOD(Recognizer::AddKeywordsSearch) {
   NanScope();
-  HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   if(args.Length() < 2) {
-    ThrowException(Exception::TypeError(String::New("Incorrect number of arguments, expected name and file")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Incorrect number of arguments, expected name and file");
+    NanReturnValue(args.This());
   }
 
   if(!args[0]->IsString() || !args[1]->IsString()) {
-    ThrowException(Exception::TypeError(String::New("Expected both name and file to be strings")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Expected both name and file to be strings");
+    NanReturnValue(args.This());
   }
 
-  String::AsciiValue name(args[0]);
-  String::AsciiValue file(args[1]);
+  NanAsciiString name(args[0]);
+  NanAsciiString file(args[1]);
 
   int result = ps_set_kws(instance->ps, *name, *file);
   if(result < 0)
-    ThrowException(Exception::Error(String::New("Failed to add keywords search to recognizer")));
+    NanThrowTypeError("Failed to add keywords search to recognizer");
 
   NanReturnValue(args.This());
 }
 
 NAN_METHOD(Recognizer::AddGrammarSearch) {
   NanScope();
-  HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   if(args.Length() < 2) {
-    ThrowException(Exception::TypeError(String::New("Incorrect number of arguments, expected name and file")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Incorrect number of arguments, expected name and file");
+    NanReturnValue(args.This());
   }
 
   if(!args[0]->IsString() || !args[1]->IsString()) {
-    ThrowException(Exception::TypeError(String::New("Expected both name and file to be strings")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Expected both name and file to be strings");
+    NanReturnValue(args.This());
   }
 
-  String::AsciiValue name(args[0]);
-  String::AsciiValue file(args[1]);
+  NanAsciiString name(args[0]);
+  NanAsciiString file(args[1]);
 
   int result = ps_set_jsgf_file(instance->ps, *name, *file);
   if(result < 0)
-    ThrowException(Exception::Error(String::New("Failed to add grammar search to recognizer")));
+    NanThrowError("Failed to add grammar search to recognizer");
 
   NanReturnValue(args.This());
 }
 
 NAN_METHOD(Recognizer::AddNgramSearch) {
   NanScope();
-  HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   if(args.Length() < 2) {
-    ThrowException(Exception::TypeError(String::New("Incorrect number of arguments, expected name and file")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Incorrect number of arguments, expected name and file");
+    NanReturnValue(args.This());
   }
 
   if(!args[0]->IsString() || !args[1]->IsString()) {
-    ThrowException(Exception::TypeError(String::New("Expected both name and file to be strings")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Expected both name and file to be strings");
+    NanReturnValue(args.This());
   }
 
-  String::AsciiValue name(args[0]);
-  String::AsciiValue file(args[1]);
+  NanAsciiString name(args[0]);
+  NanAsciiString file(args[1]);
 
   int result = ps_set_lm_file(instance->ps, *name, *file);
   if(result < 0)
-    ThrowException(Exception::Error(String::New("Failed to add Ngram search to recognizer")));
+    NanThrowError("Failed to add Ngram search to recognizer");
 
   NanReturnValue(args.This());
 }
 
 NAN_GETTER(Recognizer::GetSearch) {
-  Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(info.This());
+  NanScope();
+  Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
-  Local<Value> search = String::NewSymbol(ps_get_search(instance->ps));
+  Local<Value> search = NanNew<String>(ps_get_search(instance->ps));
 
-  return search;
+  NanReturnValue(search);
 }
 
 NAN_SETTER(Recognizer::SetSearch) {
-  Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(info.This());
+  NanScope();
+  Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
-  String::AsciiValue search(value);
+  NanAsciiString search(value);
 
   ps_set_search(instance->ps, *search);
 }
@@ -209,7 +209,7 @@ NAN_METHOD(Recognizer::Start) {
 
   int result = ps_start_utt(instance->ps);
   if(result)
-    ThrowException(Exception::Error(String::New("Failed to start PocketSphinx processing")));
+    NanThrowError("Failed to start PocketSphinx processing");
 
   NanReturnValue(args.This());
 }
@@ -220,9 +220,9 @@ NAN_METHOD(Recognizer::Stop) {
 
   int result = ps_end_utt(instance->ps);
   if(result)
-    ThrowException(Exception::Error(String::New("Failed to end PocketSphinx processing")));
+    NanThrowError("Failed to end PocketSphinx processing");
 
-  return args.This();
+  NanReturnValue(args.This());
 }
 
 NAN_METHOD(Recognizer::Restart) {
@@ -231,11 +231,11 @@ NAN_METHOD(Recognizer::Restart) {
 
   int result = ps_start_utt(instance->ps);
   if(result)
-    ThrowException(Exception::Error(String::New("Failed to start PocketSphinx processing")));
+    NanThrowTypeError("Failed to start PocketSphinx processing");
 
   result = ps_end_utt(instance->ps);
   if(result)
-    ThrowException(Exception::Error(String::New("Failed to restart PocketSphinx processing")));
+    NanThrowTypeError("Failed to restart PocketSphinx processing");
 
   NanReturnValue(args.This());
 }
@@ -245,14 +245,14 @@ NAN_METHOD(Recognizer::Write) {
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   if(!args.Length()) {
-    ThrowException(Exception::TypeError(String::NewSymbol("Expected a data buffer to be provided")));
-    return args.This();
+    NanThrowTypeError("Expected a data buffer to be provided");
+    NanReturnValue(args.This());
   }
 
   if(!node::Buffer::HasInstance(args[0])) {
-    Local<Value> argv[1] = { Exception::Error(String::NewSymbol("Expected data to be a buffer")) };
-    instance->callback->Call(Context::GetCurrent()->Global(), 1, argv);
-    return args.This();
+    Local<Value> argv[1] = { Exception::Error(NanNew("Expected data to be a buffer")) };
+    instance->callback->Call(1, argv);
+    NanReturnValue(args.This());
   }
 
   AsyncData* data = new AsyncData();
@@ -270,34 +270,32 @@ NAN_METHOD(Recognizer::Write) {
 
 NAN_METHOD(Recognizer::WriteSync) {
   NanScope();
-  HandleScope scope;
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
 
   if(!args.Length()) {
-    ThrowException(Exception::TypeError(String::NewSymbol("Expected a data buffer to be provided")));
-    return args.This();
+    NanThrowTypeError("Expected a data buffer to be provided");
+    NanReturnValue(args.This());
   }
 
   if(!node::Buffer::HasInstance(args[0])) {
-    Local<Value> argv[1] = { Exception::Error(String::NewSymbol("Expected data to be a buffer")) };
-    instance->callback->Call(Context::GetCurrent()->Global(), 1, argv);
-    return args.This();
+    Local<Value> argv[1] = { Exception::Error(NanNew("Expected data to be a buffer")) };
+    instance->callback->Call(1, argv);
+    NanReturnValue(args.This());
   }
 
   int16* data = (int16*) node::Buffer::Data(args[0]);
   size_t length = node::Buffer::Length(args[0]) / sizeof(int16);
 
   if(ps_process_raw(instance->ps, data, length, FALSE, FALSE) < 0) {
-    Handle<Value> argv[1] = { Exception::Error(String::NewSymbol("Failed to process audio data")) };
-    instance->callback->Call(Context::GetCurrent()->Global(), 1, argv);
-    return scope.Close(args.This());
+    Handle<Value> argv[1] = { Exception::Error(NanNew("Failed to process audio data")) };
+    instance->callback->Call(1, argv);
+    NanReturnValue(args.This());
   }
 
   int32 score;
   const char* hyp = ps_get_hyp(instance->ps, &score);
-
-  Handle<Value> argv[3] = { Null(), hyp ? String::NewSymbol(hyp) : Null(), NumberObject::New(score)};
-  instance->callback->Call(Context::GetCurrent()->Global(), 3, argv);
+  Handle<Value> argv[3] = { NanNull(), hyp ? NanNew(hyp) : NanNull().As<v8::String>(), NanNew<Number>(score)};
+  instance->callback->Call(3, argv);
 
   NanReturnValue(args.This());
 }
@@ -307,7 +305,7 @@ void Recognizer::AsyncWorker(uv_work_t* request) {
 
   if(ps_process_raw(data->instance->ps, data->data, data->length, FALSE, FALSE)) {
     data->hasException = TRUE;
-    data->exception = Exception::Error(String::NewSymbol("Failed to process audio data"));
+    data->exception = Exception::Error(NanNew("Failed to process audio data"));
     return;
   }
 
@@ -323,10 +321,10 @@ void Recognizer::AsyncAfter(uv_work_t* request) {
 
   if(data->hasException) {
     Handle<Value> argv[1] = { data->exception };
-    data->instance->callback->Call(Context::GetCurrent()->Global(), 1, argv);
+    data->instance->callback->Call(1, argv);
   } else {
-    Handle<Value> argv[3] = { Null(), data->hyp ? String::NewSymbol(data->hyp) : Null(), NumberObject::New(data->score)};
-    data->instance->callback->Call(Context::GetCurrent()->Global(), 3, argv);
+    Handle<Value> argv[3] = { NanNull(), data->hyp ? NanNew(data->hyp) : NanNull().As<v8::String>(), NanNew<Number>(data->score)};
+    data->instance->callback->Call(3, argv);
   }
 }
 
@@ -335,25 +333,24 @@ Local<Value> Recognizer::Default(Local<Value> value, Local<Value> fallback) {
   return value;
 }
 
-static NAN_METHOD(Recognizer::FromFloat) {
+NAN_METHOD(Recognizer::FromFloat) {
   NanScope();
-  HandleScope scope;
 
   if(!args.Length()) {
-    ThrowException(Exception::TypeError(String::NewSymbol("Expected a data buffer to be provided")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Expected a data buffer to be provided");
+    NanReturnValue(args.This());
   }
 
   if(!node::Buffer::HasInstance(args[0])) {
-    ThrowException(Exception::Error(String::NewSymbol("Expected data to be a buffer")));
-    return scope.Close(args.This());
+    NanThrowTypeError("Expected data to be a buffer");
+    NanReturnValue(args.This());
   }
 
-  float* data = reinterpret_cast<float*>(node::Buffer::Data(args[0]));
+  /*float* data = reinterpret_cast<float*>(node::Buffer::Data(args[0]));
   size_t length = node::Buffer::Length(args[0]) / sizeof(float);
 
   node::Buffer *slowBuffer = node::Buffer::New(length * sizeof(int16));
-  int16* slowBufferData = reinterpret_cast<int16*>(node::Buffer::Data(slowBuffer));
+  int16* slowBufferData = reinterpret_cast<int16*>(node::Buffer::Data(slowBuffer));*/
 
   NanReturnValue(args[0]);
 
