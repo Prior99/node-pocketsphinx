@@ -198,7 +198,6 @@ NAN_SETTER(Recognizer::SetSearch) {
   NanAsciiString search(value);
 
   ps_set_search(instance->ps, *search);
-  NanReturnUndefined();
 }
 
 NAN_METHOD(Recognizer::Start) {
