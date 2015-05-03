@@ -32,7 +32,7 @@ void Recognizer::Init(Handle<Object> exports) {
   tpl->PrototypeTemplate()->Set(NanNew("addGrammarSearch"), NanNew<FunctionTemplate>(AddGrammarSearch)->GetFunction());
   tpl->PrototypeTemplate()->Set(NanNew("addNgramSearch"), NanNew<FunctionTemplate>(AddNgramSearch)->GetFunction());
 
-  tpl->PrototypeTemplate()->SetAccessor(NanNew("search"), GetSearch, SetSearch);
+  tpl->PrototypeTemplate()->SetAccessor(NanNew("search"), Recognizer::GetSearch, Recognizer::SetSearch);
 
   tpl->PrototypeTemplate()->Set(NanNew("write"), NanNew<FunctionTemplate>(Write)->GetFunction());
   tpl->PrototypeTemplate()->Set(NanNew("writeSync"), NanNew<FunctionTemplate>(WriteSync)->GetFunction());
@@ -188,10 +188,7 @@ NAN_METHOD(Recognizer::AddNgramSearch) {
 NAN_GETTER(Recognizer::GetSearch) {
   NanScope();
   Recognizer* instance = node::ObjectWrap::Unwrap<Recognizer>(args.This());
-
-  Local<Value> search = NanNew<String>(ps_get_search(instance->ps));
-
-  NanReturnValue(search);
+  NanReturnValue(NanNew<String>(ps_get_search(instance->ps)));
 }
 
 NAN_SETTER(Recognizer::SetSearch) {
@@ -201,6 +198,7 @@ NAN_SETTER(Recognizer::SetSearch) {
   NanAsciiString search(value);
 
   ps_set_search(instance->ps, *search);
+  NanReturnUndefined();
 }
 
 NAN_METHOD(Recognizer::Start) {
